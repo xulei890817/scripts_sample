@@ -9,7 +9,10 @@
 '''
 from MaxValue.utils import proxy
 
-proxy.proxy = "http://192.168.2.24:1001"
+
+
+bitmex_api_key = "your key"
+bitmex_sign = "your sign"
 
 from MaxValue.market import MarketClass
 from MaxValue.plan import BasePlan, UpdateHandler
@@ -46,7 +49,7 @@ class PlanA(BasePlan):
             setattr(bitmex_update_handler, "depth", depth)
             return bitmex_update_handler
 
-        self.bitmex_market = self.login_into_market(MarketClass.BITMEX, update_handler=bitmex_update_handler)
+        self.bitmex_market = self.login_into_market(MarketClass.BITMEX, api_key=bitmex_api_key, sign=bitmex_sign, update_handler=bitmex_update_handler)
 
     async def start_rule(self):
         # 订阅频道
