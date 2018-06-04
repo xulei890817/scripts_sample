@@ -9,7 +9,8 @@
 '''
 from MaxValue.utils import proxy
 
-proxy.proxy = "http://192.168.2.24:1001"
+# 设置代理
+# proxy.proxy = "http://192.168.2.24:1001"
 
 from MaxValue.market import MarketClass
 from MaxValue.plan import BasePlan, UpdateHandler
@@ -17,6 +18,7 @@ import asyncio
 import arrow
 import csv
 
+# 加载api的key，这个变量自己设置
 from token_dict import okex_api_key
 from token_dict import okex_sign
 
@@ -36,15 +38,42 @@ class OkexUpdateHandler(UpdateHandler):
 class PlanA(BasePlan):
     def __init__(self, loop):
         super(PlanA, self).__init__(loop)
-        fieldnames = ['timestamp', 'high', 'limitLow', 'vol', 'last', 'low', 'buy', 'hold_amount', 'sell', 'contractId',
-                      'unitAmount', 'limitHigh']
-        self.file1 = open("okex.csv", "w", newline='')
-        self.csv_writer = csv.DictWriter(self.file1, fieldnames=fieldnames)
-        self.csv_writer.writeheader()
+        current_watch_dog = False
 
-        self.file2 = open('okex_kline.csv', 'w')
-        self.k_line_csv_writer = csv.writer(self.file2)
-        self.k_line_csv_writer.writerow(["时间", "开盘价", "最高价", "最低价", "收盘价", "成交量(张)", "成交量(币)"])
+        def init_file_handler(self, time, loop):
+            print(1111)
+            fieldnames = ['timestamp', 'high', 'limitLow', 'vol', 'last', 'low', 'buy', 'hold_amount', 'sell', 'contractId',
+                          'unitAmount', 'limitHigh']
+            self.file1 = open(str(time.format("YYYY_MM_DD_HH_mm_ss")) + "okex.csv", "w", newline='')
+            self.csv_writer = csv.DictWriter(self.file1, fieldnames=fieldnames)
+            self.csv_writer.writeheader()
+
+            self.file2 = open(str(time.format("YYYY_MM_DD_HH_mm_ss")) + 'okex_kline.csv', 'w')
+            self.k_line_csv_writer = csv.writer(self.file2)
+            self.k_line_csv_writer.writerow(["时间", "开盘价", "最高价", "最低价", "收盘价", "成交量(张)", "成交量(币)"])
+
+        async def watch_dog(self, loop):
+            nonlocal current_watch_dog
+            while True:
+                if not current_watch_dog:
+                    print(1)
+                    init_file_handler(self, arrow.now(), loop)
+                    current_watch_dog = True
+                else:
+                    print(2)
+                    # 每天0点
+                    end_time = arrow.now().shift(days=+1).replace(hour=0, minute=0, second=0)
+                    # 每一小时
+                    # end_time = arrow.now().shift(hours=+1)
+                    start_time = arrow.now()
+                    sleep_time = (end_time - start_time).seconds
+                    print(sleep_time)
+                    asyncio.get_event_loop().call_later(sleep_time, init_file_handler, self, arrow.now(), loop)
+                    # while arrow.now().float_timestamp < float_timestamp:
+                    #     await asyncio.sleep(float_timestamp - arrow.now().float_timestamp)
+                    await asyncio.sleep(sleep_time)
+
+        asyncio.ensure_future(watch_dog(self, loop), loop=loop)
 
     def login_market(self):
         def okex_update_handler():
