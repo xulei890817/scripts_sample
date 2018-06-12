@@ -85,8 +85,6 @@ class PlanA(BasePlan):
 
             def k_line(data):
                 for i in data["data"]:
-                    data_row = {"timestamp": arrow.get().float_timestamp}
-                    data_row.update(data["data"])
                     self.k_line_csv_writer.writerow(i)
                 self.file2.flush()
 
